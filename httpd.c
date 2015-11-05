@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
 
 #define HTTP_PORT 8080
 #define LISTENQ 16
@@ -157,7 +158,23 @@ int get_line(int sockfd, char* line, int size)
 
 void not_found(int sockfd, char *path)
 {
+  char buff[MAXLINE];
 
+  sprintf(buff, "HTTP/1.0 404 NOT FOUND\r\n");
+  write(sockfd, buff, strlen(buff));
+  write(sockfd, SERVER_STRING, strlen(SERVER_STRING));
+  sprintf(buff, "content-type: text/html\r\n");
+  write(sockfd, buff, strlen(buff));
+  sprintf(buff, "<html><title>NOT FOUND</title>\r\n");
+  write(sockfd, buff, strlen(buff));
+  sprintf(buff, "<body><p>The server could not fulfil\r\n");
+  write(sockfd, buff, strlen(buff));
+  sprintf(buff, "your request because the resource specified\r\n");
+  write(sockfd, buff, strlen(buff));
+  sprintf(buff, "is not available or nonexisted.");
+  write(sockfd, buff, strlen(buff));
+  sprintf(buff, "</body></html>");
+  write(sockfd, buff, strlen(buff));
 }
 
 void not_implemented(int sockfd)
@@ -165,13 +182,25 @@ void not_implemented(int sockfd)
 
 }
 
+void content_length_header(int sockfd, int length)
+{
+  int n;
+  char buff[MAXLINE];
+
+  n = sprintf(buff, "content-length: %d\r\n\r\n", length);
+  write(sockfd, buff, n);
+}
+
 void cat(int sockfd, int fd)
 {
-  char buff[MAXLINE];
+  char buff[MAXRESPONSE];
   int n;
 
-  while ((n = read(fd, buff, MAXLINE)) > 0)
+  if ((n = read(fd, buff, MAXRESPONSE)) > 0)
+  {
+    content_length_header(sockfd, n);
     write(sockfd, buff, n);
+  }
 }
 
 void header(int sockfd)
@@ -181,9 +210,18 @@ void header(int sockfd)
 
   n = sprintf(buff, "HTTP/1.1 200 OK\r\n");
   write(sockfd, buff, n);
-  n = sprintf(buff, "content-type: text/html\r\n");
-  write(sockfd, buff, n);
-  write(sockfd, SERVER_STRING, strlen(SERVER_STRING));
+  n = sprintf(buff, "content-type: text/html; charset=utf-8\r\n");
+  n = write(sockfd, buff, n);
+  n = write(sockfd, SERVER_STRING, strlen(SERVER_STRING));
+}
+
+void setunblocking(int sockfd)
+{
+  int flags;
+
+  flags = fcntl(sockfd, F_GETFL, 0);
+  fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+
 }
 
 void serve_file(int sockfd, char* path)
@@ -191,9 +229,16 @@ void serve_file(int sockfd, char* path)
   char buff[MAXLINE];
   int fd, n;
 
-  while ((n = read(sockfd, buff, MAXLINE)) > 0)
-    printf("n = %d\n", n);
+  setunblocking(sockfd);
 
+  while ((n = read(sockfd, buff, MAXLINE)) > 0)
+  {
+    printf("n = %d\n", n);
+    buff[n] = '\0';
+    printf("%s\n", buff);    
+  }
+
+  printf("end of reading\n");
   if ((fd = open(path, O_RDONLY)) < 0)
   {
     not_found(sockfd, path);

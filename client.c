@@ -54,7 +54,7 @@ int main(int argc, char const *argv[])
     exit(1);
   }
 
-  shutdown(sockfd, SHUT_WR);
+  // shutdown(sockfd, SHUT_WR);
 
   for ( ; ; )
   {
