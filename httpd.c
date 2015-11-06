@@ -10,6 +10,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "content_length.h"
+#include "content_type.h"
+
 #define HTTP_PORT 8080
 #define LISTENQ 16
 #define MAXLINE 256
@@ -22,7 +25,7 @@ void accept_request(int sockfd);
 int get_line(int sockfd, char* line, int size);
 void not_found(int sockfd, char *path);
 void cat(int sockfd, int fd);
-void header(int sockfd);
+void header(int sockfd, char *path);
 void serve_file(int sockfd, char* path);
 void not_implemented(int sockfd);
 
@@ -91,7 +94,7 @@ void accept_request(int sockfd)
     ++ptrFront;
 
   memset(path, 0, sizeof(path));
-  sprintf(path, ".");
+  sprintf(path, "/var/httpd");
   ptrBack = &path[strlen(path)];
   while (!ISSPACE(*ptrFront) && (*ptrFront != '\0'))
   {
@@ -163,7 +166,7 @@ void not_found(int sockfd, char *path)
   sprintf(buff, "HTTP/1.0 404 NOT FOUND\r\n");
   write(sockfd, buff, strlen(buff));
   write(sockfd, SERVER_STRING, strlen(SERVER_STRING));
-  sprintf(buff, "content-type: text/html\r\n");
+  sprintf(buff, "content-type: text/html\r\n\r\n");
   write(sockfd, buff, strlen(buff));
   sprintf(buff, "<html><title>NOT FOUND</title>\r\n");
   write(sockfd, buff, strlen(buff));
@@ -182,37 +185,35 @@ void not_implemented(int sockfd)
 
 }
 
-void content_length_header(int sockfd, int length)
-{
-  int n;
-  char buff[MAXLINE];
-
-  n = sprintf(buff, "content-length: %d\r\n\r\n", length);
-  write(sockfd, buff, n);
-}
-
 void cat(int sockfd, int fd)
 {
   char buff[MAXRESPONSE];
   int n;
 
-  if ((n = read(fd, buff, MAXRESPONSE)) > 0)
+  while ((n = read(fd, buff, MAXRESPONSE)) > 0)
   {
-    content_length_header(sockfd, n);
     write(sockfd, buff, n);
   }
 }
 
-void header(int sockfd)
+void header(int sockfd, char* path)
 {
   char buff[MAXLINE];
   int n;
 
   n = sprintf(buff, "HTTP/1.1 200 OK\r\n");
   write(sockfd, buff, n);
-  n = sprintf(buff, "content-type: text/html; charset=utf-8\r\n");
-  n = write(sockfd, buff, n);
+
+  if ((n = getFileTypeFromPath(path, buff, MAXLINE)) < 0)
+  {
+    close(sockfd);
+  }
+
+  n = sprintf(buff, "content-type: %s\r\n", fromFileToContentType(buff));
+  write(sockfd, buff, n);
   n = write(sockfd, SERVER_STRING, strlen(SERVER_STRING));
+  n = sprintf(buff, "content-length: %d\r\n\r\n", getContentLengthFromFile(path));
+  write(sockfd, buff, n);
 }
 
 void setunblocking(int sockfd)
@@ -231,6 +232,7 @@ void serve_file(int sockfd, char* path)
 
   setunblocking(sockfd);
 
+  // read all left bytes using unblocking io
   while ((n = read(sockfd, buff, MAXLINE)) > 0)
   {
     printf("n = %d\n", n);
@@ -245,7 +247,7 @@ void serve_file(int sockfd, char* path)
     return;
   }
 
-  header(sockfd);
+  header(sockfd, path);
   cat(sockfd, fd);  
 }
 
