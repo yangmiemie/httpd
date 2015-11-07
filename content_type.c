@@ -13,7 +13,10 @@ struct contentType
 struct contentType fileToContentType[] = {
   {"jpg", "image/jpeg"},
   {"png", "image/png"},
+  {"gif", "image/gif"},
   {"html", "text/html"},
+  {"js", "application/x-javascript"},
+  {"css", "text/css"}
 };
 
 char* getContentTypeFromFileType(char* fileType)
