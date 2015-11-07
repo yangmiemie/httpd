@@ -6,3 +6,6 @@ install:
 
 test:
 	cd tests && $(MAKE) && ./test
+
+clean:
+	cd tests && rm *.o && cd ../src && rm *.o
