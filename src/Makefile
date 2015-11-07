@@ -1,6 +1,6 @@
 objects = httpd.o content_type.o content_length.o
 
-httpd : $(objects)
+all: $(objects)
 	cc -o httpd $(objects)
 
 httpd.o: defs.h

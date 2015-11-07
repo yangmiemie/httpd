@@ -18,7 +18,6 @@
 #define MAXRESPONSE 1024
 #define SERVER_STRING "server: httpd\r\n"
 
-#define ISSPACE(x) (((x) == ' ') ? 1 : 0)
 int startup();
 void accept_request(int sockfd);
 int get_line(int sockfd, char* line, int size);
@@ -117,44 +116,6 @@ void accept_request(int sockfd)
   serve_file(sockfd, path);
 
   close(sockfd);
-}
-
-int get_line(int sockfd, char* line, int size)
-{
-  int c, i, n;
-
-  i = 0;
-  c = 0;
-
-  while (i != size - 1)
-  {
-    if ((n = recv(sockfd, &c, 1, 0)) < 0)
-    {
-      return n;
-    }
-
-    if (c == '\r')
-    {
-      if ((n = recv(sockfd, &c, 1, MSG_PEEK)) < 0)
-      {
-        return n;
-      }
-
-      if (c == '\n')
-      {
-        recv(sockfd, &c, 1, 0);
-      }
-      
-      break;
-    }
-    else
-    {
-      line[i++] = c;
-    }
-  }
-
-  line[i] = '\0';
-  return i;
 }
 
 void not_implemented(int sockfd)
