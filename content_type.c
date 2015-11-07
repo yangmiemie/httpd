@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#define TYPELEN 8
+#define FILETYPELEN 8
+#define CONTENTTYPELEN 16
 
 struct contentType
 {
@@ -15,7 +16,7 @@ struct contentType fileToContentType[] = {
   {"html", "text/html"},
 };
 
-char* fromFileToContentType(char* fileType)
+char* getContentTypeFromFileType(char* fileType)
 {
   int i, len;
 
@@ -60,7 +61,17 @@ int getFileTypeFromPath(char* path, char* fileType, int size)
   return 0;
 }
 
-int testFromFileToContentType()
+char* getContentTypeFromPath(char* path)
+{
+  char fileType[FILETYPELEN];
+
+  if (getFileTypeFromPath(path, fileType, FILETYPELEN) < 0)
+    return NULL;
+
+  return getContentTypeFromFileType(fileType);
+}
+
+int testGetContentTypeFromFileType()
 {
   int i, len;
 
@@ -68,7 +79,7 @@ int testFromFileToContentType()
 
   for (i = 0; i < len; ++i)
   {
-    printf("content type of %s: %s\n", fileToContentType[i].fileType, fileToContentType[i].contentType);
+    printf("content type of %s: %s\n", fileToContentType[i].fileType, getContentTypeFromFileType(fileToContentType[i].contentType));
   }
 
   return 0;
@@ -89,23 +100,39 @@ void printFileTypeResult(char *path, int result, char *fileType)
 int testGetFileTypeFromPath()
 {
   char *path = "/file/a/1.jpg";
-  char fileType[TYPELEN];
+  char fileType[FILETYPELEN];
   int result;
 
-  result = getFileTypeFromPath(path, fileType, TYPELEN);
+  result = getFileTypeFromPath(path, fileType, FILETYPELEN);
   printFileTypeResult(path, result, fileType);
 
   path = "/file/1.html";
-  result = getFileTypeFromPath(path, fileType, TYPELEN);
+  result = getFileTypeFromPath(path, fileType, FILETYPELEN);
   printFileTypeResult(path, result, fileType);
 
   path = "/var/httpd/1.png";
-  result = getFileTypeFromPath(path, fileType, TYPELEN);
+  result = getFileTypeFromPath(path, fileType, FILETYPELEN);
   printFileTypeResult(path, result, fileType);
 
   path = "/var/1.httpd1png";
-  result = getFileTypeFromPath(path, fileType, TYPELEN);
+  result = getFileTypeFromPath(path, fileType, FILETYPELEN);
   printFileTypeResult(path, result, fileType);
 }
 
-#undef TYPELEN
+int testGetContentTypeFromPath()
+{
+  char *path = "/file/a/1.jpg";
+  char Type[FILETYPELEN];
+  int result;
+
+  printf("contentType of %s: %s\n", path, getContentTypeFromPath(path));
+
+  path = "/file/1.html";
+  printf("contentType of %s: %s\n", path, getContentTypeFromPath(path));
+
+  path = "/var/httpd/1.png";
+  printf("contentType of %s: %s\n", path, getContentTypeFromPath(path));
+}
+
+#undef FILETYPELEN
+#undef CONTENTTYPELEN

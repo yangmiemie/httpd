@@ -10,8 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "content_length.h"
-#include "content_type.h"
+#include "defs.h"
 
 #define HTTP_PORT 8080
 #define LISTENQ 16
@@ -203,13 +202,7 @@ void header(int sockfd, char* path)
 
   n = sprintf(buff, "HTTP/1.1 200 OK\r\n");
   write(sockfd, buff, n);
-
-  if ((n = getFileTypeFromPath(path, buff, MAXLINE)) < 0)
-  {
-    close(sockfd);
-  }
-
-  n = sprintf(buff, "content-type: %s\r\n", fromFileToContentType(buff));
+  n = sprintf(buff, "content-type: %s\r\n", getContentTypeFromPath(path));
   write(sockfd, buff, n);
   n = write(sockfd, SERVER_STRING, strlen(SERVER_STRING));
   n = sprintf(buff, "content-length: %d\r\n\r\n", getContentLengthFromFile(path));
