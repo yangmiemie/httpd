@@ -56,10 +56,3 @@ void testParseHeaderOfRequest()
   assert(n == ERROR);
   assert(herrno == BAD_REQUEST);
 }
-
-int main(int argc, char const *argv[])
-{
-  testParseStartLineOfRequest();
-  testParseHeaderOfRequest();
-  return 0;
-}
