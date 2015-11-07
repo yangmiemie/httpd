@@ -54,7 +54,28 @@ int main(int argc, char const *argv[])
     exit(1);
   }
 
+  // n = sprintf(request, "host: 127.0.0.1\r\n");
+  // if (write(sockfd, request, strlen(request)) < 0)
+  // {
+  //   perror("write error");
+  //   exit(1);
+  // }
+
+  n = sprintf(request, "Accept: text/html\r\n\r\n");
+  if (write(sockfd, request, strlen(request)) < 0)
+  {
+    perror("write error");
+    exit(1);
+  }
+
   // shutdown(sockfd, SHUT_WR);
+
+  n = sprintf(request, "\r\n");
+  if (write(sockfd, request, strlen(request)) < 0)
+  {
+    perror("write error");
+    exit(1);
+  }
 
   for ( ; ; )
   {
