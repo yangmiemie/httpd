@@ -1,5 +1,8 @@
 # Httpd, A Simple Web Server
 
+#### 301
+* redirect to 127.0.0.1 when host is localhost
+
 #### 400
 * host is not existed or invalid
 * format of header is invalid
