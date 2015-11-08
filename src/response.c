@@ -112,7 +112,7 @@ int handleResponse(int sockfd, Request request)
     sendErrorBody(sockfd);
   else
     sendFileBody(sockfd, fd);
-
+  
   freeRequest(request);
   freeResponse(response);
   hcode = SUCCESS;

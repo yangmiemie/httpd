@@ -19,11 +19,11 @@ int acceptRequest(int sockfd, Request request)
   // the first line of request is start line
   if ((n = readLineFromSocket(sockfd, buf, headerSize)) > 0)
   {
-      if ((n = parseStartLineOfRequest(buf, n, request -> startLine)) < 0)
-      {
-        hcode = BAD_REQUEST;
-        return ERROR;
-      }
+    if ((n = parseStartLineOfRequest(buf, n, request -> startLine)) < 0)
+    {
+      hcode = BAD_REQUEST;
+      return ERROR;
+    }
   }
 
   i = 0;

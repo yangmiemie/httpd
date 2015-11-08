@@ -1,4 +1,4 @@
-objects = httpd.o content_type.o content_length.o utils.o request.o response.o
+objects = httpd.o content_type.o content_length.o utils.o request.o response.o web_checking.o
 
 all: $(objects)
 	cc -o httpd $(objects)
@@ -15,5 +15,8 @@ request.o: error.h request.h utils.h
 
 response.o: error.h response.h
 
+web_checking.o:  web_checking.h utils.h
+
 clean:
-	rm $(objects) || rm a.out
+	rm $(objects)
+	rm a.out

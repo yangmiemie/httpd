@@ -47,7 +47,6 @@ void web(int sockfd)
 {
   Request request;
   int n;
-  char *host;
 
   request = newRequest();
 
@@ -59,25 +58,16 @@ void web(int sockfd)
 
   printRequest(request);
 
-  if ((host = getHostOfRequest(request)) == NULL)
+  if (checkMethodOfRequest(request) < 0)
   {
-    hcode = 400;
+    printf("method error\n");
     handleResponse(sockfd, request);
     return;
   }
 
-  printf("after getHostOfRequest\n");
-
-  if ((strcmp(host, "127.0.0.1") != 0) && (strcmp(host, "localhost") != 0))
+  if (checkHostOfRequest(request) < 0)
   {
-    hcode = 400;
-    handleResponse(sockfd, request);
-    return;
-  }
-
-  if (strcmp(host, "localhost") == 0)
-  {
-    hcode = 301;
+    printf("host error\n");
     handleResponse(sockfd, request);
     return;
   }
@@ -115,7 +105,6 @@ int main(int argc, char const *argv[])
       exit(1);
     }
 
-    printf("accept connfd = %d\n", connfd);
     web(connfd);
   }
 
