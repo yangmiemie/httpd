@@ -41,6 +41,7 @@ struct codeToDescription theCodeToDescription[] = {
 };
 
 struct codeToBody theCodeToBody[] = {
+  {301, "<html>\r\n<head><title>301 Moved Permanently</title></head><body bgcolor=\"white\">\r\n<center><h1>301 Moved Permanently</h1></center>\r\n<center>httpd</center>\r\n</body></html>"},
   {400, "<html>\r\n<head><title>400 Bad Request</title></head>\r\n<body bgcolor=\"white\">\r\n<center><h1>400 Bad Request</h1></center>\r\n\
           <hr><center>httpd</center>\r\n</body>\r\n</html>"},
   {404, "<html><title>NOT FOUND</title>\r\n<body><p>The server could not fulfil\r\nyour request because the resource specified\r\n\
@@ -57,6 +58,7 @@ char* getDescriptionFromCode(int code);
 void buildStartLine(int statusCode, ReponseStartLine startLine);
 void buildFileHeaders(Response response, char* path);
 void buildErrorHeaders(Response response, char* path);
+void addRedirectLocation(Response response);
 
 void printResponse(Response response)
 {
@@ -103,6 +105,9 @@ int handleResponse(int sockfd, Request request)
     buildErrorHeaders(response, path);
   else
     buildFileHeaders(response, path);
+
+  if (hcode == 301)
+    addRedirectLocation(response);
 
   printResponse(response);
 
@@ -206,6 +211,16 @@ void buildStartLine(int statusCode, ReponseStartLine startLine)
   sprintf(startLine -> httpVersion, "%s", "HTTP/1.1");
   startLine -> statusCode = statusCode;
   sprintf(startLine -> description, "%s", getDescriptionFromCode(statusCode));
+}
+
+void addRedirectLocation(Response response)
+{
+  response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+
+  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Location");
+  sprintf((response -> headers[response -> headersNumber]) -> value, "%s", REDIRECT_URL); 
+  ++response -> headersNumber;   
 }
 
 void buildFileHeaders(Response response, char* path)

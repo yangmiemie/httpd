@@ -46,7 +46,7 @@ int main(int argc, char const *argv[])
     exit(1);
   }
 
-  n = sprintf(request, "unknown /index.html HTTP/1.1\r\n");
+  n = sprintf(request, "get /index.html HTTP/1.1\r\n");
 
   if (write(sockfd, request, strlen(request)) < 0)
   {
@@ -54,14 +54,14 @@ int main(int argc, char const *argv[])
     exit(1);
   }
 
-  n = sprintf(request, "host: 127.0.0.1\r\n");
+  n = sprintf(request, "host: localhost\r\n");
   if (write(sockfd, request, strlen(request)) < 0)
   {
     perror("write error");
     exit(1);
   }
 
-  n = sprintf(request, "Accept text/html\r\n");
+  n = sprintf(request, "Accept: text/html\r\n");
   if (write(sockfd, request, strlen(request)) < 0)
   {
     perror("write error");

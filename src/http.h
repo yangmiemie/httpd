@@ -21,7 +21,7 @@ typedef struct requestStartLine* RequestStartLine;
 #define BUFF_LEN 512
 
 #define FILE_DIRECTORY "/var/httpd"
-
+#define REDIRECT_URL "http://127.0.0.1/"
 #define SERVER_NAME "server"
 #define SERVER_VALUE "httpd"
 
