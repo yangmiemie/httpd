@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <string.h>
 
+#include "http.h"
 #include "request.h"
 #include "error.h"
 
@@ -21,11 +23,9 @@ int acceptRequest(int sockfd, Request request)
     {
       if ((n = parseStartLineOfRequest(buf, n, request -> startLine)) < 0)
       {
-        herrno = BAD_REQUEST;
+        hcode = BAD_REQUEST;
         return ERROR;
       }
-
-      ++i;
     }
     else
     {
@@ -33,19 +33,13 @@ int acceptRequest(int sockfd, Request request)
 
       if (parseHeaderOfRequest(buf, n, (request -> headers)[i]) < 0)
         {
-          herrno = BAD_REQUEST;
+          hcode = BAD_REQUEST;
           return ERROR;
         }
 
       ++i;
       request -> headersNumber = i;
     }
-  }
-
-  if (i == 0)
-  {
-    herrno = BAD_REQUEST;
-    return ERROR;
   }
 
   return SUCCESS;
@@ -58,7 +52,7 @@ int parseHeaderOfRequest(char *buf, int size, Header header)
   i = 0;
   if ((i = skipSpaceAndCheckEnd(buf, i, size)) < 0)
   {
-    herrno = BAD_REQUEST;
+    hcode = BAD_REQUEST;
     return ERROR;
   }
 
@@ -71,7 +65,7 @@ int parseHeaderOfRequest(char *buf, int size, Header header)
 
   if ((i = skipSpaceAndCheckEnd(buf, i, size)) < 0)
   {
-    herrno = BAD_REQUEST;
+    hcode = BAD_REQUEST;
     return ERROR;
   }
 
@@ -89,7 +83,7 @@ int skipSpaceAndCheckEnd(char* buf, int i, int n)
 
   if (i >= n)
   {
-    herrno = BAD_REQUEST;
+    hcode = BAD_REQUEST;
     return ERROR;
   }
 
@@ -98,14 +92,14 @@ int skipSpaceAndCheckEnd(char* buf, int i, int n)
 
 // get start line of request and parse into method, url and http version
 // return -1 when start line error
-int parseStartLineOfRequest(char* buf, int size, StartLine requestStartLine)
+int parseStartLineOfRequest(char* buf, int size, RequestStartLine requestStartLine)
 {
   int i, j;
 
   i = 0;
   if ((i = skipSpaceAndCheckEnd(buf, i, size)) < 0)
   {
-    herrno = BAD_REQUEST;    
+    hcode = BAD_REQUEST;    
     return ERROR;
   }
 
@@ -115,7 +109,7 @@ int parseStartLineOfRequest(char* buf, int size, StartLine requestStartLine)
 
   if ((i = skipSpaceAndCheckEnd(buf, i, size)) < 0)
   {
-    herrno = BAD_REQUEST;
+    hcode = BAD_REQUEST;
     return ERROR;
   }
 
@@ -125,7 +119,7 @@ int parseStartLineOfRequest(char* buf, int size, StartLine requestStartLine)
 
   if ((i = skipSpaceAndCheckEnd(buf, i, size)) < 0)
   {
-    herrno = BAD_REQUEST;
+    hcode = BAD_REQUEST;
     return ERROR;
   }
 
@@ -187,4 +181,32 @@ int readLineFromSocket(int sockfd, char* line, int size)
 
   line[i] = '\0';
   return i;
+}
+
+Request newRequest()
+{
+  Request request;
+
+  request = malloc(sizeof(struct request));
+  request -> startLine = malloc(sizeof(struct requestStartLine));
+  request -> headersNumber = 0;
+  memset(request -> body, 0, REQUEST_BODY_LEN);
+  return request;
+}
+
+void freeRequest(Request request)
+{
+  int i;
+
+  if (request == NULL)
+    return;
+
+  if (request -> startLine != NULL)
+    free(request -> startLine);
+
+  for (i = 0; i < request -> headersNumber; ++i)
+    if ((request -> headers)[i] != NULL)
+      free (request -> headers[i]);
+
+  free(request);
 }

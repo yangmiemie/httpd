@@ -1,9 +1,9 @@
 int startup();
-void accept_request(int sockfd);
-int get_line(int sockfd, char* line, int size);
-void cat(int sockfd, int fd);
-void header(int sockfd, char *path);
-void serve_file(int sockfd, char* path);
-void not_implemented(int sockfd);
+void web(int sockfd);
 
-int httpErrorno;
+#define HTTP_PORT 8080
+#define LISTENQ 16
+#define MAXLINE 256
+#define MAXRESPONSE 1024
+
+int port;

@@ -11,22 +11,8 @@
 #include <unistd.h>
 
 #include "defs.h"
-
-#define HTTP_PORT 8080
-#define LISTENQ 16
-#define MAXLINE 256
-#define MAXRESPONSE 1024
-#define SERVER_STRING "server: httpd\r\n"
-
-int startup();
-void accept_request(int sockfd);
-int get_line(int sockfd, char* line, int size);
-void cat(int sockfd, int fd);
-void header(int sockfd, char *path);
-void serve_file(int sockfd, char* path);
-void not_implemented(int sockfd);
-
-int port;
+#include "httpd.h"
+#include "utils.h"
 
 int startup()
 {
@@ -58,130 +44,61 @@ int startup()
   return listenfd;
 }
 
-void accept_request(int sockfd)
+char* getHostOfRequest(Request request)
 {
-  char line[MAXLINE], path[MAXLINE];
-  int len;
-  char *ptrFront, *ptrBack;
+  int i;
 
-  printf("in accept_request, sockfd = %d\n", sockfd);
-  len = get_line(sockfd, line, sizeof(line));
-
-  printf("First Line: %s\n", line);
-
-  ptrFront = line;
-  ptrBack = line;
-  while (!ISSPACE(*ptrFront) && (*ptrFront != '\0'))
+  for (i = 0; i < request -> headersNumber; ++i)
   {
-    *ptrFront = tolower(*ptrFront);
-    ++ptrFront;    
+    if (strcmp(stringToLower(((request -> headers)[i]) -> name), "host") == 0)
+      return (request -> headers[i]) -> value;
   }
+  
+  return NULL;
+}
 
-  *ptrFront++ = '\0';
+void web(int sockfd)
+{
+  Request request;
+  int n;
+  char *host;
 
-  if ((strcmp(ptrBack, "get") != 0))
+  request = newRequest();
+
+  if ((n = acceptRequest(sockfd, request)) < 0)
   {
-    not_implemented(sockfd);
+    handleResponse(sockfd, request);
     return;
   }
 
-  printf("method: %s\n", ptrBack);
-
-  while (ISSPACE(*ptrFront) && ptrFront != '\0')
-    ++ptrFront;
-
-  memset(path, 0, sizeof(path));
-  sprintf(path, "/var/httpd");
-  ptrBack = &path[strlen(path)];
-  while (!ISSPACE(*ptrFront) && (*ptrFront != '\0'))
+  if ((host = getHostOfRequest(request)) == NULL)
   {
-    *ptrBack = *ptrFront;
-    ++ptrFront;
-    ++ptrBack;
+    hcode = 400;
+    handleResponse(sockfd, request);
+    return;
   }
 
-  *ptrBack = '\0';
+  if ((strcmp(host, "127.0.0.1") != 0) && (strcmp(host, "localhost") != 0))
+  {
+    hcode = 400;
+    handleResponse(sockfd, request);
+    return;
+  }
 
-  ptrBack = path;
-  while ((*ptrBack != '?') && (*ptrBack != '\0'))
-    ++ ptrBack;
+  if (strcmp(host, "localhost") == 0)
+  {
+    hcode = 301;
+    handleResponse(sockfd, request);
+    return;
+  }
 
-  *ptrBack = '\0';
-
-  if (path[strlen(path) - 1] == '/')
-    strcat(path, "index.html");
-
-  printf("path: %s\n", path);
-
-  serve_file(sockfd, path);
+  // at last, send response with 200 and serve file
+  hcode = 200;
+  handleResponse(sockfd, request);
 
   close(sockfd);
 }
 
-void not_implemented(int sockfd)
-{
-
-}
-
-void cat(int sockfd, int fd)
-{
-  char buff[MAXRESPONSE];
-  int n;
-
-  while ((n = read(fd, buff, MAXRESPONSE)) > 0)
-  {
-    write(sockfd, buff, n);
-  }
-}
-
-void header(int sockfd, char* path)
-{
-  char buff[MAXLINE];
-  int n;
-
-  n = sprintf(buff, "HTTP/1.1 200 OK\r\n");
-  write(sockfd, buff, n);
-  n = sprintf(buff, "content-type: %s\r\n", getContentTypeFromPath(path));
-  write(sockfd, buff, n);
-  n = write(sockfd, SERVER_STRING, strlen(SERVER_STRING));
-  n = sprintf(buff, "content-length: %d\r\n\r\n", getContentLengthFromFile(path));
-  write(sockfd, buff, n);
-}
-
-void setunblocking(int sockfd)
-{
-  int flags;
-
-  flags = fcntl(sockfd, F_GETFL, 0);
-  fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-
-}
-
-void serve_file(int sockfd, char* path)
-{
-  char buff[MAXLINE];
-  int fd, n;
-
-  setunblocking(sockfd);
-
-  // read all left bytes using unblocking io
-  while ((n = read(sockfd, buff, MAXLINE)) > 0)
-  {
-    printf("n = %d\n", n);
-    buff[n] = '\0';
-    printf("%s\n", buff);    
-  }
-
-  printf("end of reading\n");
-  if ((fd = open(path, O_RDONLY)) < 0)
-  {
-    not_found(sockfd, path);
-    return;
-  }
-
-  header(sockfd, path);
-  cat(sockfd, fd);  
-}
 
 int main(int argc, char const *argv[])
 {
@@ -209,7 +126,7 @@ int main(int argc, char const *argv[])
     }
 
     printf("accept connfd = %d\n", connfd);
-    accept_request(connfd);
+    web(connfd);
   }
 
   return 0;
