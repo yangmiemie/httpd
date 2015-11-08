@@ -12,7 +12,6 @@
 
 #include "defs.h"
 #include "httpd.h"
-#include "utils.h"
 
 int startup()
 {
@@ -44,19 +43,6 @@ int startup()
   return listenfd;
 }
 
-char* getHostOfRequest(Request request)
-{
-  int i;
-
-  for (i = 0; i < request -> headersNumber; ++i)
-  {
-    if (strcmp(stringToLower(((request -> headers)[i]) -> name), "host") == 0)
-      return (request -> headers[i]) -> value;
-  }
-  
-  return NULL;
-}
-
 void web(int sockfd)
 {
   Request request;
@@ -71,12 +57,16 @@ void web(int sockfd)
     return;
   }
 
+  printRequest(request);
+
   if ((host = getHostOfRequest(request)) == NULL)
   {
     hcode = 400;
     handleResponse(sockfd, request);
     return;
   }
+
+  printf("after getHostOfRequest\n");
 
   if ((strcmp(host, "127.0.0.1") != 0) && (strcmp(host, "localhost") != 0))
   {

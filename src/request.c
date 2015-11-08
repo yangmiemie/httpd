@@ -2,44 +2,43 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "http.h"
 #include "request.h"
 #include "error.h"
+#include "utils.h"
 
 // return -1 means read error
 int acceptRequest(int sockfd, Request request)
 {
   int n, i, headerSize;
   char buf[HEADER_NAME_LEN + HEADER_VALUE_LEN];
-
   headerSize = HEADER_VALUE_LEN + HEADER_NAME_LEN;
 
-  i = 0;
-  while ((n = readLineFromSocket(sockfd, buf, headerSize)) > 0)
+  // the first line of request is start line
+  if ((n = readLineFromSocket(sockfd, buf, headerSize)) > 0)
   {
-    // the first line of request is start line
-    if (i == 0)
-    {
       if ((n = parseStartLineOfRequest(buf, n, request -> startLine)) < 0)
       {
         hcode = BAD_REQUEST;
         return ERROR;
       }
-    }
-    else
-    {
-      (request -> headers)[i] = malloc(sizeof(struct header));
+  }
 
-      if (parseHeaderOfRequest(buf, n, (request -> headers)[i]) < 0)
-        {
-          hcode = BAD_REQUEST;
-          return ERROR;
-        }
+  i = 0;
 
-      ++i;
-      request -> headersNumber = i;
-    }
+  while ((n = readLineFromSocket(sockfd, buf, headerSize)) > 0)
+  {
+    (request -> headers)[i] = malloc(sizeof(struct header));
+    if (parseHeaderOfRequest(buf, n, (request -> headers)[i]) < 0)
+      {
+        hcode = BAD_REQUEST;
+        return ERROR;
+      }
+
+    ++i;
+    request -> headersNumber = i;
   }
 
   return SUCCESS;
@@ -134,6 +133,7 @@ int parseStartLineOfRequest(char* buf, int size, RequestStartLine requestStartLi
 int readByteFromSocket(int sockfd)
 {
   int c, n;
+  c = 0;
 
   if ((n = recv(sockfd, &c, 1, 0)) < 0)
   {
@@ -165,7 +165,6 @@ int readLineFromSocket(int sockfd, char* line, int size)
 
   i = 0;
   c = 0;
-
   while (i != size - 1)
   {
     if ((c = readByteFromSocket(sockfd)) == -1)
@@ -183,13 +182,30 @@ int readLineFromSocket(int sockfd, char* line, int size)
   return i;
 }
 
+char* getHostOfRequest(Request request)
+{
+  int i;
+
+  for (i = 0; i < request -> headersNumber; ++i)
+  {
+    if (strcmp(stringToLower(((request -> headers)[i]) -> name), "host") == 0)
+      return (request -> headers[i]) -> value;
+  }
+  
+  return NULL;
+}
+
 Request newRequest()
 {
   Request request;
 
   request = malloc(sizeof(struct request));
   request -> startLine = malloc(sizeof(struct requestStartLine));
+  
   request -> headersNumber = 0;
+  request -> headers = malloc(sizeof(Header) * MAX_HEADERS_NUMBER);
+  memset(request -> headers, 0, sizeof(Header) * MAX_HEADERS_NUMBER);
+
   memset(request -> body, 0, REQUEST_BODY_LEN);
   return request;
 }
@@ -209,4 +225,19 @@ void freeRequest(Request request)
       free (request -> headers[i]);
 
   free(request);
+}
+
+void printRequest(Request request)
+{
+  int i;
+
+  printf("method: %s\n", request -> startLine -> method);
+  printf("url: %s\n", request -> startLine -> url);
+  printf("version: %s\n", request -> startLine -> httpVersion);
+
+  printf("headers:\n");
+  for (i = 0; i < request -> headersNumber; ++i)
+  {
+    printf("%s:%s\n", request -> headers[i] -> name, request -> headers[i] -> value);
+  }
 }

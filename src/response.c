@@ -58,20 +58,35 @@ void buildStartLine(int statusCode, ReponseStartLine startLine);
 void buildFileHeaders(Response response, char* path);
 void buildErrorHeaders(Response response, char* path);
 
+void printResponse(Response response)
+{
+  int i;
+  printf("code: %d\n", response -> startLine -> statusCode);
+  printf("description: %s\n", response -> startLine -> description);
+  printf("version: %s\n", response -> startLine -> httpVersion);
+
+  printf("headersSize: %d\n", response -> headersNumber);
+  for (i = 0; i < response -> headersNumber; ++i)
+  {
+    printf("%s:%s\n", response -> headers[i] -> name, response -> headers[i] -> value);
+  }
+}
+
 int handleResponse(int sockfd, Request request)
 {
   char path[PATH_LEN];
+  int fd;
   Response response;
 
   response = newResponse();
-  buildStartLine(hcode, response -> startLine);
 
   getPathFromUrl(request -> startLine -> url, path, PATH_LEN);
 
+  printf("path: %s\n", path);
   // check if file is existed or permission is allowed
   if (hcode == 200)
   {
-    if (open(path, O_RDONLY) < 0)
+    if (((fd = open(path, O_RDONLY))) < 0)
     {
       if (errno == EACCES)
         hcode = 403;
@@ -80,17 +95,23 @@ int handleResponse(int sockfd, Request request)
     }
   }
 
+  printf("hcode = %d\n", hcode);
+
+  buildStartLine(hcode, response -> startLine);
+
   if (hcode != 200)
     buildErrorHeaders(response, path);
   else
     buildFileHeaders(response, path);
+
+  printResponse(response);
 
   sendResponseHeaders(sockfd, response);
 
   if (hcode != 200)
     sendErrorBody(sockfd);
   else
-    sendFileBody(sockfd);
+    sendFileBody(sockfd, fd);
 
   freeRequest(request);
   freeResponse(response);
@@ -100,22 +121,24 @@ int handleResponse(int sockfd, Request request)
 
 void getPathFromUrl(char *url, char *path, int size)
 {
-  int i;
+  int i, j;
 
-  sprintf(path, FILE_DIRECTORY, strlen(FILE_DIRECTORY));
+  memset(path, 0, size);
+  sprintf(path, "%s", FILE_DIRECTORY);
 
-  for (i = 0; url[i] != '\0' && url[i] != '?' && i < size; ++i)
-    path[i] = url[i];
+  j = strlen(path);
+  for (i = 0; url[i] != '\0' && url[i] != '?' && i < size; ++i, ++j)
+    path[j] = url[i];
 
-  path[i] = '\0';
+  path[j] = '\0';
 }
 
-int sendFileBody(int sockfd)
+int sendFileBody(int sockfd, int filefd)
 {
   char buff[BUFF_LEN];
   int n;
 
-  while ((n = read(sockfd, buff, BUFF_LEN)) > 0)
+  while ((n = read(filefd, buff, BUFF_LEN)) > 0)
   {
     write(sockfd, buff, n);
   }
@@ -138,14 +161,15 @@ int sendResponseHeaders(int sockfd, Response response)
   sprintf(buff, "%s %d %s\r\n", response -> startLine -> httpVersion, response -> startLine -> statusCode, response -> startLine -> description);
   write(sockfd, buff, strlen(buff));
 
-  for (i = 0; response -> headersNumber; ++i)
+  for (i = 0; i < response -> headersNumber; ++i)
   {
     memset(buff, 0, BUFF_LEN);
-    sprintf("%s:%s\r\n", response -> headers[i] -> name, response -> headers[i] -> value);
+    sprintf(buff, "%s:%s\r\n", response -> headers[i] -> name, response -> headers[i] -> value);
     write(sockfd, buff, strlen(buff));
   }
 
-  sprintf(buff, "\r\n");
+  memset(buff, 0, BUFF_LEN);
+  sprintf(buff, "%s", "\r\n");
   write(sockfd, buff, strlen(buff));
 
   return 0;
@@ -179,24 +203,30 @@ char* getBodyFromCode(int code)
 
 void buildStartLine(int statusCode, ReponseStartLine startLine)
 {
-  sprintf(startLine -> httpVersion, "HTTP/1.1");
+  sprintf(startLine -> httpVersion, "%s", "HTTP/1.1");
   startLine -> statusCode = statusCode;
-  sprintf(startLine -> description, getDescriptionFromCode(statusCode));
+  sprintf(startLine -> description, "%s", getDescriptionFromCode(statusCode));
 }
 
 void buildFileHeaders(Response response, char* path)
 {
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-length");
-  sprintf((response -> headers[response -> headersNumber]) -> value, "%s", getContentLengthFromFile(path)); 
+  sprintf((response -> headers[response -> headersNumber]) -> value, "%d", getContentLengthFromFile(path)); 
   ++response -> headersNumber; 
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+  
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-type");
   sprintf((response -> headers[response -> headersNumber]) -> value, "%s", getContentTypeFromPath(path));    
   ++response -> headersNumber;
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+  
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", SERVER_NAME);
   sprintf((response -> headers[response -> headersNumber]) -> value, "%s", SERVER_VALUE);    
   ++response -> headersNumber;
@@ -205,16 +235,22 @@ void buildFileHeaders(Response response, char* path)
 void buildErrorHeaders(Response response, char* path)
 {
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+  
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-length");
   sprintf((response -> headers[response -> headersNumber]) -> value, "%d",strlen(getBodyFromCode(hcode))); 
   ++response -> headersNumber; 
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+  
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-type");
   sprintf((response -> headers[response -> headersNumber]) -> value, "%s", "text/html");    
   ++response -> headersNumber;
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+  
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", SERVER_NAME);
   sprintf((response -> headers[response -> headersNumber]) -> value, "%s", SERVER_VALUE);    
   ++response -> headersNumber;
@@ -225,8 +261,13 @@ Response newResponse()
   Response response;
 
   response = malloc(sizeof(struct response));
-  response -> startLine = malloc(sizeof(struct requestStartLine));
+  response -> startLine = malloc(sizeof(struct responseStartLine));
+  memset(response -> startLine, 0, sizeof(struct responseStartLine));
+
   response -> headersNumber = 0;
+  response -> headers = malloc(sizeof(Header) * MAX_HEADERS_NUMBER);
+  memset(response -> headers, 0, sizeof(Header) * MAX_HEADERS_NUMBER);
+
   response -> bodySize = 0;
   response -> body = NULL;
 

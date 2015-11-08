@@ -9,5 +9,5 @@ char* stringToLower(char* string)
     string[i] = tolower(string[i]);
   }
 
-  return;
+  return string;
 }

@@ -46,7 +46,7 @@ int main(int argc, char const *argv[])
     exit(1);
   }
 
-  n = sprintf(request, "GET /12.html HTTP/1.1\r\n");
+  n = sprintf(request, "GET /index.html HTTP/1.1\r\n");
 
   if (write(sockfd, request, strlen(request)) < 0)
   {

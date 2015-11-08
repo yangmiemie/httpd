@@ -11,9 +11,9 @@ content_length.o: content_length.h
 
 utils.o: utils.h
 
-request.o: error.h request.h
+request.o: error.h request.h utils.h
 
 response.o: error.h response.h
 
 clean:
-	rm $(objects)
+	rm $(objects) || rm a.out
