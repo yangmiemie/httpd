@@ -135,7 +135,11 @@ void getPathFromUrl(char *url, char *path, int size)
   for (i = 0; url[i] != '\0' && url[i] != '?' && i < size; ++i, ++j)
     path[j] = url[i];
 
-  path[j] = '\0';
+  printf("path in getPathFromUrl: %s\n", path);
+  printf("last char of path: %c\n", path[strlen(path) - 1]);
+
+  if (path[strlen(path) - 1] == '/')
+    strcat(path, "index.html");
 }
 
 int sendFileBody(int sockfd, int filefd)

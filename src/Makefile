@@ -20,3 +20,4 @@ web_checking.o:  web_checking.h utils.h
 clean:
 	rm $(objects)
 	rm a.out
+	rm httpd
