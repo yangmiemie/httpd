@@ -6,4 +6,7 @@ void web(int sockfd);
 #define MAXLINE 256
 #define MAXRESPONSE 1024
 
+#define WORKER_PROCESSES 4
+
 int port;
+int nchildren;

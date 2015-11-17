@@ -1,9 +1,11 @@
-objects = httpd.o content_type.o content_length.o utils.o request.o response.o web_checking.o
+objects = httpd.o content_type.o content_length.o utils.o request.o response.o web_checking.o web.o
 
 all: $(objects)
 	cc -o httpd $(objects)
 
-httpd.o: defs.h httpd.h
+httpd.o: defs.h httpd.h web.h
+
+web.o: defs.h web.h
 
 content_type.o: content_type.h
 
@@ -19,5 +21,5 @@ web_checking.o:  web_checking.h utils.h
 
 clean:
 	rm $(objects)
-	rm a.out
 	rm httpd
+	rm a.out

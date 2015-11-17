@@ -9,9 +9,15 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
-#include "defs.h"
 #include "httpd.h"
+#include "web.h"
+
+void sig_int(int signo);
+static pid_t *pids;
 
 int startup()
 {
@@ -43,48 +49,10 @@ int startup()
   return listenfd;
 }
 
-void web(int sockfd)
-{
-  Request request;
-  int n;
-
-  request = newRequest();
-
-  if ((n = acceptRequest(sockfd, request)) < 0)
-  {
-    handleResponse(sockfd, request);
-    return;
-  }
-
-  printRequest(request);
-
-  if (checkMethodOfRequest(request) < 0)
-  {
-    printf("method error\n");
-    handleResponse(sockfd, request);
-    return;
-  }
-
-  if (checkHostOfRequest(request) < 0)
-  {
-    printf("host error\n");
-    handleResponse(sockfd, request);
-    return;
-  }
-
-  // at last, send response with 200 and serve file
-  hcode = 200;
-  handleResponse(sockfd, request);
-
-  close(sockfd);
-}
-
-
 int main(int argc, char const *argv[])
 {
-  int listenfd, connfd;
-  struct sockaddr_in cliaddr;
-  int clilen;
+  int listenfd;
+  int i;
 
   port = HTTP_PORT;
 
@@ -94,19 +62,36 @@ int main(int argc, char const *argv[])
   }
 
   listenfd = startup();
-  clilen = sizeof(cliaddr);
 
+  nchildren = WORKER_PROCESSES;
+  pids = calloc(nchildren, sizeof(pid_t));
+  
+  printf("nchildren = %d\n", nchildren);
 
-  for ( ; ; )
+  for (i = 0; i < nchildren; ++i)
   {
-    if ((connfd = accept(listenfd, (struct sockaddr*)&cliaddr, &clilen)) < 0)
-    {
-      perror("accept error");
-      exit(1);
-    }
-
-    web(connfd);
+    pids[i] = child_make(i, listenfd);
   }
 
+  signal(SIGINT, sig_int);
+
+  for ( ; ; )
+    pause();
+
   return 0;
+}
+
+
+void sig_int(int signo)
+{
+  int i;
+
+  for (i = 0; i < nchildren; ++i)
+  {
+    kill(pids[i], SIGTERM);
+  }
+
+  while(wait(NULL) > 0);
+
+  exit(1);
 }
