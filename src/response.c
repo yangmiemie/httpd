@@ -121,7 +121,6 @@ int handleResponse(int sockfd, Request request)
   freeRequest(request);
   freeResponse(response);
   hcode = SUCCESS;
-  close(sockfd);
 }
 
 void getPathFromUrl(char *url, char *path, int size)

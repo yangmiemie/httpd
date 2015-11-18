@@ -25,6 +25,12 @@ int acceptRequest(int sockfd, Request request)
       return ERROR;
     }
   }
+  else
+  {
+    // get FIN or Error from client
+    printf("readLineFromSocket get n: %d\n", n);
+    return n;
+  }
 
   i = 0;
 
@@ -135,7 +141,7 @@ int readByteFromSocket(int sockfd)
   int c, n;
   c = 0;
 
-  if ((n = recv(sockfd, &c, 1, 0)) < 0)
+  if ((n = recv(sockfd, &c, 1, 0)) <= 0)
   {
     return n;
   }
@@ -167,10 +173,16 @@ int readLineFromSocket(int sockfd, char* line, int size)
   c = 0;
   while (i != size - 1)
   {
-    if ((c = readByteFromSocket(sockfd)) == -1)
+    if ((c = readByteFromSocket(sockfd)) <= 0)
     {
       if (i == 0)
-        return ERROR;
+      {
+        // if first char is FIN, then return FIN_CODE, else return error
+        if (c == 0)
+          return FIN_CODE;
+        else
+          return ERROR;
+      }
       else
         break;
     }
@@ -201,7 +213,8 @@ Request newRequest()
 
   request = malloc(sizeof(struct request));
   request -> startLine = malloc(sizeof(struct requestStartLine));
-  
+  memset(request -> startLine, 0, sizeof(struct requestStartLine));
+
   request -> headersNumber = 0;
   request -> headers = malloc(sizeof(Header) * MAX_HEADERS_NUMBER);
   memset(request -> headers, 0, sizeof(Header) * MAX_HEADERS_NUMBER);

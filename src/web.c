@@ -16,9 +16,14 @@ void web(int sockfd)
   {
     request = newRequest();
 
-    if ((n = acceptRequest(sockfd, request)) < 0)
+    if ((n = acceptRequest(sockfd, request)) == ERROR)
     {
       handleResponse(sockfd, request);
+      return;
+    }
+    else if (n == FIN_CODE)
+    {
+      printf("receive FIN_CODE\n");
       return;
     }
 
