@@ -7,7 +7,7 @@ struct contentType
   char* contentType;
 };
 
-char* getContentTypeFromFileType(char*);
-int getFileTypeFromPath(char*, char*, int);
-char* getContentTypeFromPath(char*);
+char* getContentTypeFromFileType(const char*);
+int getFileTypeFromPath(const char*, char*, int);
+char* getContentTypeFromPath(const char*);
 

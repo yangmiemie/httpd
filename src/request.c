@@ -74,7 +74,7 @@ int parseHeaderOfRequest(char *buf, int size, Header header)
     return ERROR;
   }
 
-  for (j = 0; i < size && !ISCOLON(buf[i]); ++i, ++j)
+  for (j = 0; i < size && !ISNEWLINE(buf[i]); ++i, ++j)
     header -> value[j] = buf[i];
   header -> value[j] = '\0';
   
@@ -194,13 +194,13 @@ int readLineFromSocket(int sockfd, char* line, int size)
   return i;
 }
 
-char* getHostOfRequest(Request request)
+char* getHeaderOfRequest(Request request, char *header)
 {
   int i;
 
   for (i = 0; i < request -> headersNumber; ++i)
   {
-    if (strcmp(stringToLower(((request -> headers)[i]) -> name), "host") == 0)
+    if (strcmp(stringToLower(((request -> headers)[i]) -> name), header) == 0)
       return (request -> headers[i]) -> value;
   }
   

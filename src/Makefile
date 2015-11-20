@@ -1,4 +1,5 @@
-objects = httpd.o content_type.o content_length.o utils.o request.o response.o web_checking.o web.o
+objects = httpd.o content_type.o content_length.o utils.o request.o response.o web_checking.o web.o \
+					last_modified.o 
 
 all: $(objects)
 	cc -o httpd $(objects)
@@ -10,6 +11,8 @@ web.o: defs.h web.h
 content_type.o: content_type.h
 
 content_length.o: content_length.h
+
+last_modified.o: last_modified.h
 
 utils.o: utils.h
 

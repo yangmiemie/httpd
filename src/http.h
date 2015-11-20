@@ -9,9 +9,10 @@ typedef struct requestStartLine* RequestStartLine;
 #define PATH_LEN 64
 #define HTTP_VERSION_LEN 16
 #define DESCRIPTION_LEN 16
+#define TIME_LEN 32
 
 #define MAX_HEADERS_NUMBER 32
-#define HEADER_NAME_LEN 16
+#define HEADER_NAME_LEN 32
 #define HEADER_VALUE_LEN 512
 
 #define START_LINE_LEN 128

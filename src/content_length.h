@@ -1,1 +1,1 @@
-int getContentLengthFromFile(char* );
+int getContentLengthFromFile(const char* );

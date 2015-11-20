@@ -23,6 +23,7 @@ void web(int sockfd)
     }
     else if (n == FIN_CODE)
     {
+      // if receive FIN, then return 
       printf("receive FIN_CODE\n");
       return;
     }
@@ -43,6 +44,12 @@ void web(int sockfd)
       return;
     }
 
+    if (checkLastModifiedOfFile(request) < 0)
+    {
+      printf("return 304\n");
+      handleResponse(sockfd, request);
+      return;
+    }
     // at last, send response with 200 and serve file
     hcode = 200;
     handleResponse(sockfd, request);

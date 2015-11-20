@@ -101,10 +101,14 @@ int handleResponse(int sockfd, Request request)
 
   buildStartLine(hcode, response -> startLine);
 
+  printf("after build startLine\n");
+
   if (hcode != 200)
     buildErrorHeaders(response, path);
   else
     buildFileHeaders(response, path);
+
+  printf("after build header\n");
 
   if (hcode == 301)
     addRedirectLocation(response);
@@ -113,32 +117,16 @@ int handleResponse(int sockfd, Request request)
 
   sendResponseHeaders(sockfd, response);
 
-  if (hcode != 200)
-    sendErrorBody(sockfd);
-  else
+  if (hcode == 200)
     sendFileBody(sockfd, fd);
-  
+  else if (hcode == 304)
+  {}
+  else
+    sendErrorBody(sockfd);
+
   freeRequest(request);
   freeResponse(response);
   hcode = SUCCESS;
-}
-
-void getPathFromUrl(char *url, char *path, int size)
-{
-  int i, j;
-
-  memset(path, 0, size);
-  sprintf(path, "%s", FILE_DIRECTORY);
-
-  j = strlen(path);
-  for (i = 0; url[i] != '\0' && url[i] != '?' && i < size; ++i, ++j)
-    path[j] = url[i];
-
-  printf("path in getPathFromUrl: %s\n", path);
-  printf("last char of path: %c\n", path[strlen(path) - 1]);
-
-  if (path[strlen(path) - 1] == '/')
-    strcat(path, "index.html");
 }
 
 int sendFileBody(int sockfd, int filefd)
@@ -228,6 +216,8 @@ void addRedirectLocation(Response response)
 
 void buildFileHeaders(Response response, char* path)
 {
+  char modifiedTimeOfFile[TIME_LEN];
+
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
   memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
 
@@ -248,23 +238,45 @@ void buildFileHeaders(Response response, char* path)
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", SERVER_NAME);
   sprintf((response -> headers[response -> headersNumber]) -> value, "%s", SERVER_VALUE);    
   ++response -> headersNumber;
+
+  printf("path: %s\n", path);
+  getLastModifiedTime(path, modifiedTimeOfFile, TIME_LEN);
+
+  printf("Last-Modified: %s", modifiedTimeOfFile);
+
+  response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+  
+  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Last-Modified");
+  sprintf((response -> headers[response -> headersNumber]) -> value, "%s", modifiedTimeOfFile);    
+  ++response -> headersNumber;
+
+  response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+  
+  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Cache-Control");
+  sprintf((response -> headers[response -> headersNumber]) -> value, "%s", "max-age=315360000");    
+  ++response -> headersNumber;  
 }
 
 void buildErrorHeaders(Response response, char* path)
 {
-  response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
-  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
-  
-  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-length");
-  sprintf((response -> headers[response -> headersNumber]) -> value, "%d",strlen(getBodyFromCode(hcode))); 
-  ++response -> headersNumber; 
+  if (hcode != 304)
+  {
+    response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+    memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+    
+    sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-length");
+    sprintf((response -> headers[response -> headersNumber]) -> value, "%d",strlen(getBodyFromCode(hcode))); 
+    ++response -> headersNumber; 
 
-  response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
-  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
-  
-  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-type");
-  sprintf((response -> headers[response -> headersNumber]) -> value, "%s", "text/html");    
-  ++response -> headersNumber;
+    response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+    memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+    
+    sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-type");
+    sprintf((response -> headers[response -> headersNumber]) -> value, "%s", "text/html");    
+    ++response -> headersNumber;    
+  }
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
   memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));

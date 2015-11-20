@@ -6,7 +6,7 @@
 #include "error.h"
 
 // get content length of response, which is the size of the file
-int getContentLengthFromFile(char* file)
+int getContentLengthFromFile(const char* file)
 {
   struct stat statbuf;
 

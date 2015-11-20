@@ -13,7 +13,7 @@ struct contentType fileToContentType[] = {
   {"css", "text/css"}
 };
 
-char* getContentTypeFromFileType(char* fileType)
+char* getContentTypeFromFileType(const char* fileType)
 {
   int i, len;
 
@@ -34,7 +34,7 @@ char* getContentTypeFromFileType(char* fileType)
 // The argument path must be a string and end up with '\0'.
 // The resulting string is copied to the buffer pointed by fileType.
 // The number of bytes available in this buffer is the argument size.
-int getFileTypeFromPath(char* path, char* fileType, int size)
+int getFileTypeFromPath(const char* path, char* fileType, int size)
 {
   int i, j, len;
 
@@ -59,7 +59,7 @@ int getFileTypeFromPath(char* path, char* fileType, int size)
   return SUCCESS;
 }
 
-char* getContentTypeFromPath(char* path)
+char* getContentTypeFromPath(const char* path)
 {
   char fileType[FILETYPELEN];
 
