@@ -36,6 +36,7 @@ struct codeToDescription theCodeToDescription[] = {
   {403, "Forbidden"},
   {404, "Not Found"},
   {405, "Method Not Allowed"},
+  {411, "Length Required"},
   {501, "Not Implemented"},
   {505, "HTTP Version Not Supported"}
 };
@@ -47,7 +48,8 @@ struct codeToBody theCodeToBody[] = {
   {404, "<html><title>NOT FOUND</title>\r\n<body><p>The server could not fulfil\r\nyour request because the resource specified\r\n\
           is not available or nonexisted.</body></html>"},
   {403, "<html><head><title>403 Forbidden</title></head>\r\n<body bgcolor=\"white\" youdao=\"bind\">\r\n<center><h1>403 Forbidden</h1></center>\r\n\
-  <hr><center>nginx/1.0.15</center>\r\n</body></html>"}
+  <hr><center>nginx/1.0.15</center>\r\n</body></html>"},
+  {411, "<html><head><title>Length Required</title></head><body><h1>Length Required</h1>HTTPD::HTTPStatus::LengthRequired</body></html>"}
 };
 
 Response newResponse();

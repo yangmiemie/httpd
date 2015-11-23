@@ -3,6 +3,9 @@
 #### 301
 * redirect to 127.0.0.1 when host is localhost
 
+#### 304
+* return 304 when file is not modified
+
 #### 400
 * host is not existed or invalid
 * format of header is invalid
@@ -13,3 +16,5 @@
 
 #### 404
 * file is not existed in server
+#### 411
+* post without content-length

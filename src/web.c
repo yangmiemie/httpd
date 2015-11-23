@@ -29,7 +29,7 @@ void web(int sockfd)
     }
 
     printRequest(request);
-
+    
     if (checkMethodOfRequest(request) < 0)
     {
       printf("method error\n");
@@ -44,12 +44,28 @@ void web(int sockfd)
       return;
     }
 
-    if (checkLastModifiedOfFile(request) < 0)
+    printf("method: %s\n", request -> startLine -> method);
+
+    if (strcmp(stringToLower(request -> startLine -> method), "get") == 0)
     {
-      printf("return 304\n");
-      handleResponse(sockfd, request);
-      return;
+
+      if (checkLastModifiedOfFile(request) < 0)
+      {
+        printf("return 304\n");
+        handleResponse(sockfd, request);
+        return;
+      }
     }
+    else if (strcmp(stringToLower(request -> startLine -> method), "post") == 0)
+    {
+      if (getHeaderOfRequest(request, "Content-Length") == NULL)
+      {
+        hcode = 411;
+        handleResponse(sockfd, request);
+        return;
+      }
+    }
+
     // at last, send response with 200 and serve file
     hcode = 200;
     handleResponse(sockfd, request);
