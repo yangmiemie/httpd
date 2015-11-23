@@ -1,5 +1,8 @@
 # Httpd, A Simple Web Server
 
+#### 201
+* create a new resource in server
+
 #### 301
 * redirect to 127.0.0.1 when host is localhost
 
@@ -19,3 +22,6 @@
 
 #### 411
 * post without content-length
+
+#### 500
+* server open dumpfile error

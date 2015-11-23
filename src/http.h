@@ -8,7 +8,7 @@ typedef struct requestStartLine* RequestStartLine;
 #define URL_LEN 64
 #define PATH_LEN 64
 #define HTTP_VERSION_LEN 16
-#define DESCRIPTION_LEN 16
+#define DESCRIPTION_LEN 32
 #define TIME_LEN 32
 
 #define MAX_HEADERS_NUMBER 32
@@ -25,6 +25,7 @@ typedef struct requestStartLine* RequestStartLine;
 #define REDIRECT_URL "http://127.0.0.1/"
 #define SERVER_NAME "server"
 #define SERVER_VALUE "httpd"
+#define DB_FILE "/var/httpd/dumpfile"
 
 struct header
 {
@@ -51,7 +52,8 @@ struct request
   RequestStartLine startLine;
   Header *headers;
   int headersNumber;
-  char body[REQUEST_BODY_LEN];
+  char *body;
+  int bodySize;
 };
 
 struct response

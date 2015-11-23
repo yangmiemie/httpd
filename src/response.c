@@ -37,11 +37,13 @@ struct codeToDescription theCodeToDescription[] = {
   {404, "Not Found"},
   {405, "Method Not Allowed"},
   {411, "Length Required"},
+  {500, "Internal Server Error"},
   {501, "Not Implemented"},
   {505, "HTTP Version Not Supported"}
 };
 
 struct codeToBody theCodeToBody[] = {
+  {201, "<html>\r\n<head><title>201 Created</title></head><body bgcolor=\"white\">\r\n<center><h1>200 Created</h1></center>\r\n<center>httpd</center>\r\n</body></html>"},
   {301, "<html>\r\n<head><title>301 Moved Permanently</title></head><body bgcolor=\"white\">\r\n<center><h1>301 Moved Permanently</h1></center>\r\n<center>httpd</center>\r\n</body></html>"},
   {400, "<html>\r\n<head><title>400 Bad Request</title></head>\r\n<body bgcolor=\"white\">\r\n<center><h1>400 Bad Request</h1></center>\r\n\
           <hr><center>httpd</center>\r\n</body>\r\n</html>"},
@@ -49,7 +51,10 @@ struct codeToBody theCodeToBody[] = {
           is not available or nonexisted.</body></html>"},
   {403, "<html><head><title>403 Forbidden</title></head>\r\n<body bgcolor=\"white\" youdao=\"bind\">\r\n<center><h1>403 Forbidden</h1></center>\r\n\
   <hr><center>nginx/1.0.15</center>\r\n</body></html>"},
-  {411, "<html><head><title>Length Required</title></head><body><h1>Length Required</h1>HTTPD::HTTPStatus::LengthRequired</body></html>"}
+  {411, "<html>\r\n<head><title>Length Required</title></head>\r\n<body><h1>Length Required</h1>\r\n\
+        <center>HTTPD::HTTPStatus::LengthRequired</center></body>\r\n</html>"},
+  {500, "<html>\r\n<head><title>500 Internal Server Error</title></head>\r\n<body><h1>Internal Server Error</h1>\r\n\
+        <center>HTTPD::HTTPStatus::InternalServerError</center></body>\r\n</html>"}
 };
 
 Response newResponse();

@@ -33,7 +33,6 @@ int checkHostOfRequest(Request request)
     return ERROR;
   }
 
-  // if host is wrong, return 400
   if ((strncmp(host, "127.0.0.1", strlen("127.0.0.1")) != 0) && (strncmp(host, "localhost", strlen("localhost")) != 0))
   {
     hcode = 400;
@@ -51,8 +50,6 @@ int checkHostOfRequest(Request request)
 
 int checkLastModifiedOfFile(Request request)
 {
-  printf("in checkLastModifiedOfFile\n");
-
   char path[PATH_LEN], modifiedTimeOfFile[TIME_LEN];
   char *lastModified;
 

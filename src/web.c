@@ -3,9 +3,16 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "defs.h"
 #include "web.h"
+
+int handlePostofRequest(int sockfd, Request request);
 
 void web(int sockfd)
 {
@@ -44,8 +51,6 @@ void web(int sockfd)
       return;
     }
 
-    printf("method: %s\n", request -> startLine -> method);
-
     if (strcmp(stringToLower(request -> startLine -> method), "get") == 0)
     {
 
@@ -58,18 +63,58 @@ void web(int sockfd)
     }
     else if (strcmp(stringToLower(request -> startLine -> method), "post") == 0)
     {
-      if (getHeaderOfRequest(request, "Content-Length") == NULL)
+      if (getHeaderOfRequest(request, "content-length") == NULL)
       {
         hcode = 411;
         handleResponse(sockfd, request);
         return;
       }
+
+      handlePostofRequest(sockfd, request);
+      handleResponse(sockfd, request);
+      return;
     }
 
     // at last, send response with 200 and serve file
     hcode = 200;
     handleResponse(sockfd, request);
   }
+}
+
+int handlePostofRequest(int sockfd, Request request)
+{
+  int len, n;
+  int fd;
+
+  len = atoi(getHeaderOfRequest(request, "content-length"));
+
+  request -> body = malloc(len);
+  request -> bodySize = len;
+
+  if ((n = read(sockfd, request -> body, len)) < 0)
+  {
+    hcode = 400;
+    return ERROR;
+  }
+
+  if ((fd = open(DB_FILE, O_RDWR)) < 0)
+  {
+    hcode = 500;
+    return ERROR;
+  }
+
+  lseek(fd, 0, SEEK_END);
+
+  if (write(fd, request -> body, request -> bodySize) < 0)
+  {
+    hcode = 500;
+    return ERROR;
+  }
+
+  write(fd, "\r\n", 2);
+
+  hcode = 201;
+  return SUCCESS;
 }
 
 void child_main(int listenfd)

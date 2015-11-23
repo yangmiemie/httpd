@@ -219,7 +219,9 @@ Request newRequest()
   request -> headers = malloc(sizeof(Header) * MAX_HEADERS_NUMBER);
   memset(request -> headers, 0, sizeof(Header) * MAX_HEADERS_NUMBER);
 
-  memset(request -> body, 0, REQUEST_BODY_LEN);
+  request -> body = NULL;
+  request -> bodySize = 0;
+
   return request;
 }
 
@@ -236,6 +238,9 @@ void freeRequest(Request request)
   for (i = 0; i < request -> headersNumber; ++i)
     if ((request -> headers)[i] != NULL)
       free (request -> headers[i]);
+
+  if (request -> body != NULL)
+    free(request -> body);
 
   free(request);
 }
