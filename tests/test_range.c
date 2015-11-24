@@ -24,43 +24,50 @@ void testRangeOfRequest()
   size = sbuf.st_size;
 
   offset = len = 0;
-  range = "bytes: 0-10";
+  range = "bytes=0-10";
   n = getRangeOfRequest(range, path, &offset, &len);
   assert(n == SUCCESS);
   assert(offset == 0);
   assert(len == 11);
 
   offset = len = 0;
-  range = "bytes: 10-";
+  range = "bytes=0-10";
+  n = getRangeOfRequest(range, path, &offset, &len);
+  assert(n == SUCCESS);
+  assert(offset == 0);
+  assert(len == 11);
+
+  offset = len = 0;
+  range = "bytes=10-";
   n = getRangeOfRequest(range, path, &offset, &len);
   assert(n == SUCCESS);
   assert(offset == 10);
   assert(len == size - 10);
 
   offset = len = 0;
-  range = "bytes: -10";
+  range = "bytes=-10";
   n = getRangeOfRequest(range, path, &offset, &len);
   assert(n == SUCCESS);
   assert(offset == size - 10);
   assert(len == 10);
 
   offset = len = 0;
-  range = "bytes: -";
+  range = "bytes=-";
   n = getRangeOfRequest(range, path, &offset, &len);
   assert(n == ERROR);
 
   offset = len = 0;
-  range = "bytes: 12a-12a";
+  range = "bytes=12a-12a";
   n = getRangeOfRequest(range, path, &offset, &len);
   assert(n == ERROR);
 
   offset = len = 0;
-  range = "bytes: 12a-";
+  range = "bytes=12a-";
   n = getRangeOfRequest(range, path, &offset, &len);
   assert(n == ERROR);
 
   offset = len = 0;
-  range = "bytes: -12a";
+  range = "bytes=-12a";
   n = getRangeOfRequest(range, path, &offset, &len);
   assert(n == ERROR);
 }
