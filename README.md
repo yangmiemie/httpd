@@ -1,5 +1,7 @@
 # Httpd, A Simple Web Server
 
+## HTTP Code
+
 #### 201
 * create a new resource in server
 
@@ -25,3 +27,6 @@
 
 #### 500
 * server open dumpfile error
+
+
+## HTTP Method

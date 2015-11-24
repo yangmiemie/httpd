@@ -8,7 +8,7 @@ typedef struct requestStartLine* RequestStartLine;
 #define URL_LEN 64
 #define PATH_LEN 64
 #define HTTP_VERSION_LEN 16
-#define DESCRIPTION_LEN 32
+#define DESCRIPTION_LEN 64
 #define TIME_LEN 32
 
 #define MAX_HEADERS_NUMBER 32

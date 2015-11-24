@@ -1,5 +1,6 @@
 #include "http.h"
 #include "response.h"
+#include "request.h"
 #include "error.h"
 
 #include <stdio.h>
@@ -9,6 +10,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 struct codeToDescription
 {
@@ -28,6 +30,7 @@ struct codeToDescription theCodeToDescription[] = {
   {202, "Accepted"},
   {203, "Non-Authoritative Information"},
   {204, "No Content"},
+  {206, "Partial Content"},
   {301, "Moved Permanently"},
   {302, "Found"},
   {304, "Not Modified"},
@@ -37,6 +40,7 @@ struct codeToDescription theCodeToDescription[] = {
   {404, "Not Found"},
   {405, "Method Not Allowed"},
   {411, "Length Required"},
+  {416, "Requested Range Not Satisfiable"},
   {500, "Internal Server Error"},
   {501, "Not Implemented"},
   {505, "HTTP Version Not Supported"}
@@ -47,14 +51,20 @@ struct codeToBody theCodeToBody[] = {
   {301, "<html>\r\n<head><title>301 Moved Permanently</title></head><body bgcolor=\"white\">\r\n<center><h1>301 Moved Permanently</h1></center>\r\n<center>httpd</center>\r\n</body></html>"},
   {400, "<html>\r\n<head><title>400 Bad Request</title></head>\r\n<body bgcolor=\"white\">\r\n<center><h1>400 Bad Request</h1></center>\r\n\
           <hr><center>httpd</center>\r\n</body>\r\n</html>"},
-  {404, "<html><title>NOT FOUND</title>\r\n<body><p>The server could not fulfil\r\nyour request because the resource specified\r\n\
-          is not available or nonexisted.</body></html>"},
   {403, "<html><head><title>403 Forbidden</title></head>\r\n<body bgcolor=\"white\" youdao=\"bind\">\r\n<center><h1>403 Forbidden</h1></center>\r\n\
   <hr><center>nginx/1.0.15</center>\r\n</body></html>"},
+  {404, "<html><title>NOT FOUND</title>\r\n<body><p>The server could not fulfil\r\nyour request because the resource specified\r\n\
+          is not available or nonexisted.</body></html>"},
+  {405, "<html>\r\n<head><title>405 Method Not Allowed</title></head>\r\n<body bgcolor=\"white\">\r\n<center><h1>405 Method Not Allowed</h1></center>\r\n\
+          <hr><center>httpd</center>\r\n</body>\r\n</html>"},
   {411, "<html>\r\n<head><title>Length Required</title></head>\r\n<body><h1>Length Required</h1>\r\n\
         <center>HTTPD::HTTPStatus::LengthRequired</center></body>\r\n</html>"},
+  {416, "<html>\r\n<head><title>416 Requested Range Not Satisfiable</title></head>\r\n<body bgcolor=\"white\">\r\n<center><h1>416 Requested Range Not Satisfiable</h1></center>\r\n\
+          <hr><center>httpd</center>\r\n</body>\r\n</html>"},
   {500, "<html>\r\n<head><title>500 Internal Server Error</title></head>\r\n<body><h1>Internal Server Error</h1>\r\n\
-        <center>HTTPD::HTTPStatus::InternalServerError</center></body>\r\n</html>"}
+        <center>HTTPD::HTTPStatus::InternalServerError</center></body>\r\n</html>"},
+  {501, "<html>\r\n<head><title>501 Not Implemented</title></head>\r\n<body bgcolor=\"white\">\r\n<center><h1>501 Not Implemented</h1></center>\r\n\
+          <hr><center>httpd</center>\r\n</body>\r\n</html>"}
 };
 
 Response newResponse();
@@ -63,7 +73,7 @@ void getPathFromUrl(char *url, char *path, int size);
 char* getBodyFromCode(int code);
 char* getDescriptionFromCode(int code);
 void buildStartLine(int statusCode, ReponseStartLine startLine);
-void buildFileHeaders(Response response, char* path);
+void buildFileHeaders(Response response, char* path, int length);
 void buildErrorHeaders(Response response, char* path);
 void addRedirectLocation(Response response);
 
@@ -84,7 +94,8 @@ void printResponse(Response response)
 int handleResponse(int sockfd, Request request)
 {
   char path[PATH_LEN];
-  int fd;
+  int fd, offset, len;
+  char *ptr;
   Response response;
 
   response = newResponse();
@@ -104,18 +115,26 @@ int handleResponse(int sockfd, Request request)
     }
   }
 
-  printf("hcode = %d\n", hcode);
+  offset = 0;
+  len = BUFF_LEN;
+  if ((ptr = getHeaderOfRequest(request, "range")) != NULL)
+  {
+    printf("getRangeOfRequest ptr: %s\n", ptr);
+    if (getRangeOfRequest(ptr, path, &offset, &len) < 0)
+      hcode = 416;
+    else
+      hcode = 206;
+  }
 
+  printf("after getRangeOfRequest, hcode = %d\n", hcode);
   buildStartLine(hcode, response -> startLine);
 
-  printf("after build startLine\n");
-
-  if (hcode != 200)
-    buildErrorHeaders(response, path);
+  if (hcode == 200 || hcode == 206)
+    buildFileHeaders(response, path, len);
   else
-    buildFileHeaders(response, path);
+    buildErrorHeaders(response, path);
 
-  printf("after build header\n");
+  printf("after buildFileHeaders\n");
 
   if (hcode == 301)
     addRedirectLocation(response);
@@ -124,8 +143,8 @@ int handleResponse(int sockfd, Request request)
 
   sendResponseHeaders(sockfd, response);
 
-  if (hcode == 200)
-    sendFileBody(sockfd, fd);
+  if (hcode == 200 || hcode == 206)
+    sendFileBody(sockfd, fd, offset, len);
   else if (hcode == 304)
   {}
   else
@@ -136,14 +155,26 @@ int handleResponse(int sockfd, Request request)
   hcode = SUCCESS;
 }
 
-int sendFileBody(int sockfd, int filefd)
+int sendFileBody(int sockfd, int filefd, int offset, int len)
 {
   char buff[BUFF_LEN];
   int n;
 
-  while ((n = read(filefd, buff, BUFF_LEN)) > 0)
+  if ((hcode == 206) && (offset > 0))
+  {
+    if ((n = lseek(filefd, offset, SEEK_SET)) < 0)
+    {
+      perror("lseek error");
+      exit(1);
+    }
+  }
+
+  while ((n = read(filefd, buff, len)) > 0)
   {
     write(sockfd, buff, n);
+
+    if (n >= len)
+      break;
   }
 }
 
@@ -221,15 +252,18 @@ void addRedirectLocation(Response response)
   ++response -> headersNumber;   
 }
 
-void buildFileHeaders(Response response, char* path)
+// the length paramter means the length of content, when 206, the length is not the size of file
+void buildFileHeaders(Response response, char* path, int length)
 {
   char modifiedTimeOfFile[TIME_LEN];
+  int contentLength;
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
   memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
 
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-length");
-  sprintf((response -> headers[response -> headersNumber]) -> value, "%d", getContentLengthFromFile(path)); 
+  contentLength = hcode == 206 ? length : getContentLengthFromFile(path);
+  sprintf((response -> headers[response -> headersNumber]) -> value, "%d", contentLength); 
   ++response -> headersNumber; 
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));

@@ -1,5 +1,5 @@
 objects = httpd.o content_type.o content_length.o utils.o request.o response.o web_checking.o web.o \
-					last_modified.o 
+					last_modified.o range.o
 
 all: $(objects)
 	cc -o httpd $(objects)
@@ -12,13 +12,15 @@ content_type.o: content_type.h
 
 content_length.o: content_length.h
 
+range.o: range.h
+
 last_modified.o: last_modified.h
 
 utils.o: utils.h
 
 request.o: error.h request.h utils.h
 
-response.o: error.h response.h
+response.o: error.h response.h range.h
 
 web_checking.o:  web_checking.h utils.h
 

@@ -10,5 +10,8 @@ int main(int argc, char const *argv[])
   testGetContentTypeFromFileType();
 
   testGetContentLengthFromFile();
+
+  testRangeOfRequest();
+  
   return 0;
 }

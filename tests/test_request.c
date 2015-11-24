@@ -2,16 +2,17 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "../src/http.h"
 #include "../src/request.h"
 #include "../src/error.h"
 
 void testParseStartLineOfRequest()
 {
   char *buf;
-  StartLine startLine;
+  RequestStartLine startLine;
   int n;
 
-  startLine = malloc(sizeof(struct startLine));
+  startLine = malloc(sizeof(struct requestStartLine));
 
   buf = "Get /finance/test HTTP/1.1";
   n = parseStartLineOfRequest(buf, strlen(buf), startLine);
@@ -24,17 +25,17 @@ void testParseStartLineOfRequest()
   buf = "Get /finance/test";
   n = parseStartLineOfRequest(buf, strlen(buf), startLine);
   assert(n == ERROR);
-  assert(herrno == BAD_REQUEST);
+  assert(hcode == BAD_REQUEST);
 
   buf = "Get";
   n = parseStartLineOfRequest(buf, strlen(buf), startLine);
   assert(n == ERROR);
-  assert(herrno == BAD_REQUEST);
+  assert(hcode == BAD_REQUEST);
   
   buf = "Get";
   n = parseStartLineOfRequest(buf, strlen(buf), startLine);
   assert(n == ERROR);
-  assert(herrno == BAD_REQUEST);
+  assert(hcode == BAD_REQUEST);
 }
 
 void testParseHeaderOfRequest()
@@ -54,5 +55,5 @@ void testParseHeaderOfRequest()
   buf = "User-Agent Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36";
   n = parseHeaderOfRequest(buf, strlen(buf), header);
   assert(n == ERROR);
-  assert(herrno == BAD_REQUEST);
+  assert(hcode == BAD_REQUEST);
 }
