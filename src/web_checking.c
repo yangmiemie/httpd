@@ -11,12 +11,22 @@
 int checkMethodOfRequest(Request request)
 {
   char* method;
+  char* unimplementedMethods[] = {"put", "patch", "delete"};
+  int i, len;
 
+  len = sizeof(unimplementedMethods) / sizeof(char*);
   method = stringToLower(request -> startLine -> method);
 
   if (strcmp(method, "get") != 0 && strcmp(method, "post") != 0)
   {
-    hcode = 400;
+    for (i = 0; i < len; ++i)
+      if (strcmp(method, unimplementedMethods[i]) == 0)
+      {
+        hcode = 501;
+        return ERROR;
+      }
+
+    hcode = 405;
     return ERROR;
   }
 
