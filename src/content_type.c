@@ -9,6 +9,7 @@ struct contentType fileToContentType[] = {
   {"png", "image/png"},
   {"gif", "image/gif"},
   {"html", "text/html"},
+  {"txt", "text/plain"},
   {"js", "application/x-javascript"},
   {"css", "text/css"},
   {"webp", "image/webp"},

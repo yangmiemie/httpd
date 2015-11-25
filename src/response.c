@@ -73,10 +73,11 @@ void getPathFromUrl(char *url, char *path, int size);
 char* getBodyFromCode(int code);
 char* getDescriptionFromCode(int code);
 void buildStartLine(int statusCode, ReponseStartLine startLine);
-void buildFileHeaders(Response response, char* path, int length);
+void buildFileHeaders(Response response, char* path, int length, int gzip);
 void buildErrorHeaders(Response response, char* path);
 void addRedirectLocation(Response response);
 void addContentRange(Response response, char* path, int offset, int len);
+void addContentEncoding(Response response);
 
 void printResponse(Response response)
 {
@@ -94,20 +95,39 @@ void printResponse(Response response)
 
 int handleResponse(int sockfd, Request request)
 {
-  char path[PATH_LEN];
+  char path[PATH_LEN], gzipPath[PATH_LEN];
   int fd, offset, len;
+  int gzip;
   char *ptr;
   Response response;
 
   response = newResponse();
 
+  memset(path, 0, PATH_LEN);
+  memset(gzipPath, 0, PATH_LEN);
+
   getPathFromUrl(request -> startLine -> url, path, PATH_LEN);
 
+  gzip = 0;
+  if (((ptr = getHeaderOfRequest(request, "accept-encoding")) != NULL) && (strcmp(ptr, "gzip") == 0))
+  {
+    gzip = 1;
+    sprintf(gzipPath, "%s.gz", path);
+  }
+
   printf("path: %s\n", path);
+
   // check if file is existed or permission is allowed
   if (hcode == 200)
   {
-    if (((fd = open(path, O_RDONLY))) < 0)
+    // if gz file is not found, then still find normal file
+    if (gzip == 1)
+    {
+      if ((fd = open(gzipPath, O_RDONLY)) < 0)
+        gzip = 0;
+    }
+
+    if ((gzip == 0) && ((fd = open(path, O_RDONLY))) < 0)
     {
       if (errno == EACCES)
         hcode = 403;
@@ -118,7 +138,8 @@ int handleResponse(int sockfd, Request request)
 
   offset = 0;
   len = BUFF_LEN;
-  if ((ptr = getHeaderOfRequest(request, "range")) != NULL)
+  // If gzip in enabled, then Range Header is disabled.
+  if ((gzip == 0) && ((ptr = getHeaderOfRequest(request, "range")) != NULL))
   {
     printf("getRangeOfRequest ptr: %s\n", ptr);
     if (getRangeOfRequest(ptr, path, &offset, &len) < 0)
@@ -131,7 +152,7 @@ int handleResponse(int sockfd, Request request)
   buildStartLine(hcode, response -> startLine);
 
   if (hcode == 200 || hcode == 206)
-    buildFileHeaders(response, path, len);
+    buildFileHeaders(response, path, len, gzip);
   else
     buildErrorHeaders(response, path);
 
@@ -140,8 +161,11 @@ int handleResponse(int sockfd, Request request)
   if (hcode == 301)
     addRedirectLocation(response);
 
-  if (hcode = 206)
+  if (hcode == 206)
     addContentRange(response, path, offset, len);
+
+  if (gzip == 1)
+    addContentEncoding(response);
 
   printResponse(response);
 
@@ -266,10 +290,21 @@ void addContentRange(Response response, char* path, int offset, int len)
   ++response -> headersNumber;   
 }
 
+void addContentEncoding(Response response)
+{
+  response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+
+  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Content-Encoding");
+  sprintf((response -> headers[response -> headersNumber]) -> value, "gzip"); 
+  ++response -> headersNumber;   
+}
+
 // the length paramter means the length of content, when 206, the length is not the size of file
-void buildFileHeaders(Response response, char* path, int length)
+void buildFileHeaders(Response response, char* path, int length, int gzip)
 {
   char modifiedTimeOfFile[TIME_LEN];
+  char gzipPath[PATH_LEN];
   int contentLength;
 
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
@@ -277,6 +312,11 @@ void buildFileHeaders(Response response, char* path, int length)
 
   sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Content-length");
   contentLength = hcode == 206 ? length : getContentLengthFromFile(path);
+  if (gzip == 1)
+  {
+    sprintf(gzipPath, "%s.gz", path);
+    contentLength = getContentLengthFromFile(gzipPath);
+  }
   sprintf((response -> headers[response -> headersNumber]) -> value, "%d", contentLength); 
   ++response -> headersNumber; 
 
