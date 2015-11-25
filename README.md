@@ -41,15 +41,19 @@
 * method not implemented, such as put and delete
 
 
+## HTTP Headers
 
-## HTTP Method
+* Range: bytes=m-n
+* Content-Range: bytes m-n/x
 
-Range: bytes=m-n
-Content-Range: bytes m-n/x
+* Accept-Encoding: gzip
+* Content-Encoding: gzip
 
-Need to be done:
-Content-Range
-gzip
+* Last-Modified
+* If-Modified-Since
+* Cache-Control
 
+* Content-Length
+* Content-Type
 
 
