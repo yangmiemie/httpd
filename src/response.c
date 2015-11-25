@@ -76,6 +76,7 @@ void buildStartLine(int statusCode, ReponseStartLine startLine);
 void buildFileHeaders(Response response, char* path, int length);
 void buildErrorHeaders(Response response, char* path);
 void addRedirectLocation(Response response);
+void addContentRange(Response response, char* path, int offset, int len);
 
 void printResponse(Response response)
 {
@@ -138,6 +139,9 @@ int handleResponse(int sockfd, Request request)
 
   if (hcode == 301)
     addRedirectLocation(response);
+
+  if (hcode = 206)
+    addContentRange(response, path, offset, len);
 
   printResponse(response);
 
@@ -252,6 +256,16 @@ void addRedirectLocation(Response response)
   ++response -> headersNumber;   
 }
 
+void addContentRange(Response response, char* path, int offset, int len)
+{
+  response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
+  memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
+
+  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Content-Range");
+  sprintf((response -> headers[response -> headersNumber]) -> value, "bytes %d-%d/%d", offset, offset + len - 1, getContentLengthFromFile(path)); 
+  ++response -> headersNumber;   
+}
+
 // the length paramter means the length of content, when 206, the length is not the size of file
 void buildFileHeaders(Response response, char* path, int length)
 {
@@ -261,7 +275,7 @@ void buildFileHeaders(Response response, char* path, int length)
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
   memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
 
-  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-length");
+  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Content-length");
   contentLength = hcode == 206 ? length : getContentLengthFromFile(path);
   sprintf((response -> headers[response -> headersNumber]) -> value, "%d", contentLength); 
   ++response -> headersNumber; 
@@ -269,7 +283,7 @@ void buildFileHeaders(Response response, char* path, int length)
   response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
   memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
   
-  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-type");
+  sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Content-type");
   sprintf((response -> headers[response -> headersNumber]) -> value, "%s", getContentTypeFromPath(path));    
   ++response -> headersNumber;
 
@@ -307,14 +321,14 @@ void buildErrorHeaders(Response response, char* path)
     response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
     memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
     
-    sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-length");
+    sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Content-length");
     sprintf((response -> headers[response -> headersNumber]) -> value, "%d",strlen(getBodyFromCode(hcode))); 
     ++response -> headersNumber; 
 
     response -> headers[response -> headersNumber] = malloc(sizeof(struct header));
     memset(response -> headers[response -> headersNumber], 0, sizeof(struct header));
     
-    sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "content-type");
+    sprintf((response -> headers[response -> headersNumber]) -> name, "%s", "Content-type");
     sprintf((response -> headers[response -> headersNumber]) -> value, "%s", "text/html");    
     ++response -> headersNumber;    
   }

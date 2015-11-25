@@ -25,6 +25,9 @@
 #### 404
 * file is not existed in server
 
+#### 405
+* method not allowed, such as options and trace
+
 #### 411
 * post without content-length
 
@@ -34,16 +37,18 @@
 #### 500
 * server open dumpfile error
 
+#### 501
+* method not implemented, such as put and delete
+
+
 
 ## HTTP Method
 
 Range: bytes=m-n
-
+Content-Range: bytes m-n/x
 
 Need to be done:
 Content-Range
-Method not allowed
-Not implemented
 gzip
 
 

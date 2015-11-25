@@ -46,7 +46,7 @@ int main(int argc, char const *argv[])
     exit(1);
   }
 
-  n = sprintf(request, "GET / HTTP/1.1\r\nhost: 127.0.0.1\r\nRange: bytes=a-10\r\n\r\n");
+  n = sprintf(request, "GET / HTTP/1.1\r\nhost: 127.0.0.1\r\nRange: bytes=0-10\r\n\r\n");
 
   if (write(sockfd, request, strlen(request)) < 0)
   {
@@ -96,7 +96,7 @@ int main(int argc, char const *argv[])
     }
     else if (n == 0)
     {
-      fprintf(stderr, "server teminated\n");
+      fprintf(stderr, "\n\nserver teminated\n\n");
       break;
     }
 
